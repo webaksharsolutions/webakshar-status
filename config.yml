@@ -1,0 +1,87 @@
+title: Webakshar Status
+buildFuture: true
+baseURL: https://status.webakshar.com
+languageCode: en
+defaultContentLanguage: en
+theme: cstate
+
+preserveTaxonomyNames: true
+
+taxonomies:
+  affected: affected
+
+outputs:
+  page:
+    - html
+    - json
+  section:
+    - html
+    - json
+    - rss
+  home:
+    - html
+    - json
+    - rss
+    - svg
+  term:
+    - html
+    - json
+    - rss
+    - svg
+
+outputFormats:
+  svg:
+    isPlainText: true
+    mediaType: image/svg+xml
+
+params:
+  dateFormat: January 2, 2006 at 3:04 PM
+  shortDateFormat: "15:04 — Jan 2"
+  useRelativeTime: true
+  enableLastMod: true
+  enableUptimeHistogram: true
+  useLargeHeaderDesign: false
+  incidentHistoryFormat: yearly
+  disableDarkMode: false
+  useLogo: false
+  description: "Real-time status and incident history for Webakshar Solutions services."
+
+  incidentPostsPerPage: 10
+  enableCustomHTML: true
+
+  # Colors
+  brand: "#0a0c0f"
+  ok: "#008000"
+  disrupted: "#cc4400"
+  down: "#e60000"
+  notice: "#24478f"
+  alwaysKeepBrandColor: true
+  headerTextColor: "white"
+
+  customTabs:
+    - name: Webakshar
+      link: https://webakshar.com
+    - name: WaURL
+      link: https://waurl.in
+    - name: Websarthi
+      link: https://websarthi.com
+
+  categories:
+    - name: WaURL
+      description: "WaURL — Smart URL & Chat Services"
+    - name: Websarthi
+      description: "Websarthi — Web Solutions Platform"
+
+  systems:
+    - name: WaURL Chat API
+      category: WaURL
+      description: "Real-time chat and messaging API"
+      link: https://dev-chat-api.waurl.in
+    - name: WaURL Website
+      category: WaURL
+      description: "Main WaURL website"
+      link: https://waurl.in
+    - name: Websarthi Website
+      category: Websarthi
+      description: "Main Websarthi website"
+      link: https://websarthi.com

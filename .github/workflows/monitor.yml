@@ -1,0 +1,164 @@
+name: Monitor Services
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # Every 5 minutes
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Check WaURL Chat API
+        id: waurl_api
+        run: |
+          HTTP_CODE=$(curl -s -o /tmp/waurl_response.json -w "%{http_code}" \
+            --max-time 30 \
+            "https://dev-chat-api.waurl.in/health/stats" || echo "000")
+
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            UPTIME=$(jq -r '.uptime // "unknown"' /tmp/waurl_response.json 2>/dev/null || echo "unknown")
+            CONNECTIONS=$(jq -r '.connections.total // 0' /tmp/waurl_response.json 2>/dev/null || echo "0")
+            echo "status=ok" >> $GITHUB_OUTPUT
+            echo "uptime=$UPTIME" >> $GITHUB_OUTPUT
+            echo "connections=$CONNECTIONS" >> $GITHUB_OUTPUT
+          else
+            echo "status=down" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check WaURL Website
+        id: waurl_web
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            "https://waurl.in" || echo "000")
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+            echo "status=ok" >> $GITHUB_OUTPUT
+          else
+            echo "status=down" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Websarthi Website
+        id: websarthi_web
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            "https://websarthi.com" || echo "000")
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+            echo "status=ok" >> $GITHUB_OUTPUT
+          else
+            echo "status=down" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create incident if WaURL API is down
+        if: steps.waurl_api.outputs.status == 'down'
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          DATE_SLUG=$(date -u +"%Y-%m-%d")
+          FILENAME="content/issues/${DATE_SLUG}-waurl-chat-api-down.md"
+
+          if [ ! -f "$FILENAME" ]; then
+            cat > "$FILENAME" << EOF
+          ---
+          title: "WaURL Chat API Outage"
+          date: ${TIMESTAMP}
+          resolved: false
+          severity: down
+          affected:
+            - WaURL Chat API
+          section: issue
+          ---
+
+          The WaURL Chat API is currently unreachable (HTTP ${{ steps.waurl_api.outputs.http_code }}).
+
+          Our team has been notified and is investigating the issue.
+
+          {{< track "${TIMESTAMP}" >}}
+
+          **Investigating** — Automated monitoring detected that the WaURL Chat API is not responding.
+          EOF
+
+            git config user.name "Status Bot"
+            git config user.email "status-bot@webakshar.com"
+            git add "$FILENAME"
+            git commit -m "incident: WaURL Chat API down [automated]"
+            git push
+          fi
+
+      - name: Create incident if WaURL Website is down
+        if: steps.waurl_web.outputs.status == 'down'
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          DATE_SLUG=$(date -u +"%Y-%m-%d")
+          FILENAME="content/issues/${DATE_SLUG}-waurl-website-down.md"
+
+          if [ ! -f "$FILENAME" ]; then
+            cat > "$FILENAME" << EOF
+          ---
+          title: "WaURL Website Outage"
+          date: ${TIMESTAMP}
+          resolved: false
+          severity: down
+          affected:
+            - WaURL Website
+          section: issue
+          ---
+
+          The WaURL website is currently unreachable (HTTP ${{ steps.waurl_web.outputs.http_code }}).
+
+          {{< track "${TIMESTAMP}" >}}
+
+          **Investigating** — Automated monitoring detected that the WaURL website is not responding.
+          EOF
+
+            git config user.name "Status Bot"
+            git config user.email "status-bot@webakshar.com"
+            git add "$FILENAME"
+            git commit -m "incident: WaURL Website down [automated]"
+            git push
+          fi
+
+      - name: Create incident if Websarthi is down
+        if: steps.websarthi_web.outputs.status == 'down'
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          DATE_SLUG=$(date -u +"%Y-%m-%d")
+          FILENAME="content/issues/${DATE_SLUG}-websarthi-website-down.md"
+
+          if [ ! -f "$FILENAME" ]; then
+            cat > "$FILENAME" << EOF
+          ---
+          title: "Websarthi Website Outage"
+          date: ${TIMESTAMP}
+          resolved: false
+          severity: down
+          affected:
+            - Websarthi Website
+          section: issue
+          ---
+
+          The Websarthi website is currently unreachable (HTTP ${{ steps.websarthi_web.outputs.http_code }}).
+
+          {{< track "${TIMESTAMP}" >}}
+
+          **Investigating** — Automated monitoring detected that the Websarthi website is not responding.
+          EOF
+
+            git config user.name "Status Bot"
+            git config user.email "status-bot@webakshar.com"
+            git add "$FILENAME"
+            git commit -m "incident: Websarthi Website down [automated]"
+            git push
+          fi
