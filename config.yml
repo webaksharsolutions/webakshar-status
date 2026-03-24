@@ -81,6 +81,10 @@ params:
       category: WaURL
       description: "Main WaURL website"
       link: https://waurl.in
+    - name: Websarthi API
+      category: Websarthi
+      description: "Backend API, MongoDB, and job processing"
+      link: https://qa-api.websarathi.com
     - name: Websarthi Website
       category: Websarthi
       description: "Main Websarthi website"

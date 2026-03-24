@@ -49,6 +49,32 @@ jobs:
             echo "status=down" >> $GITHUB_OUTPUT
           fi
 
+      - name: Check Websarthi API
+        id: websarthi_api
+        run: |
+          HTTP_CODE=$(curl -s -o /tmp/websarthi_response.json -w "%{http_code}" \
+            --max-time 30 \
+            "https://qa-api.websarathi.com/health/stats" || echo "000")
+
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            DB_STATUS=$(jq -r '.database.status // "unknown"' /tmp/websarthi_response.json 2>/dev/null || echo "unknown")
+            MONGO_STATUS=$(jq -r '.services.mongodb // "unknown"' /tmp/websarthi_response.json 2>/dev/null || echo "unknown")
+            AGENDA_STATUS=$(jq -r '.services.agenda // "unknown"' /tmp/websarthi_response.json 2>/dev/null || echo "unknown")
+            echo "status=ok" >> $GITHUB_OUTPUT
+            echo "db_status=$DB_STATUS" >> $GITHUB_OUTPUT
+            echo "mongo_status=$MONGO_STATUS" >> $GITHUB_OUTPUT
+            echo "agenda_status=$AGENDA_STATUS" >> $GITHUB_OUTPUT
+
+            # Check if internal services are degraded
+            if [ "$MONGO_STATUS" != "up" ] || [ "$AGENDA_STATUS" != "up" ]; then
+              echo "status=disrupted" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "status=down" >> $GITHUB_OUTPUT
+          fi
+
       - name: Check Websarthi Website
         id: websarthi_web
         run: |
@@ -127,6 +153,72 @@ jobs:
             git config user.email "status-bot@webakshar.com"
             git add "$FILENAME"
             git commit -m "incident: WaURL Website down [automated]"
+            git push
+          fi
+
+      - name: Create incident if Websarthi API is down
+        if: steps.websarthi_api.outputs.status == 'down'
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          DATE_SLUG=$(date -u +"%Y-%m-%d")
+          FILENAME="content/issues/${DATE_SLUG}-websarthi-api-down.md"
+
+          if [ ! -f "$FILENAME" ]; then
+            cat > "$FILENAME" << EOF
+          ---
+          title: "Websarthi API Outage"
+          date: ${TIMESTAMP}
+          resolved: false
+          severity: down
+          affected:
+            - Websarthi API
+          section: issue
+          ---
+
+          The Websarthi API is currently unreachable (HTTP ${{ steps.websarthi_api.outputs.http_code }}).
+
+          {{< track "${TIMESTAMP}" >}}
+
+          **Investigating** — Automated monitoring detected that the Websarthi API is not responding.
+          EOF
+
+            git config user.name "Status Bot"
+            git config user.email "status-bot@webakshar.com"
+            git add "$FILENAME"
+            git commit -m "incident: Websarthi API down [automated]"
+            git push
+          fi
+
+      - name: Create incident if Websarthi API is disrupted
+        if: steps.websarthi_api.outputs.status == 'disrupted'
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          DATE_SLUG=$(date -u +"%Y-%m-%d")
+          FILENAME="content/issues/${DATE_SLUG}-websarthi-api-disrupted.md"
+
+          if [ ! -f "$FILENAME" ]; then
+            cat > "$FILENAME" << EOF
+          ---
+          title: "Websarthi API Degraded Performance"
+          date: ${TIMESTAMP}
+          resolved: false
+          severity: disrupted
+          affected:
+            - Websarthi API
+          section: issue
+          ---
+
+          The Websarthi API is experiencing degraded performance. MongoDB: ${{ steps.websarthi_api.outputs.mongo_status }}, Agenda: ${{ steps.websarthi_api.outputs.agenda_status }}.
+
+          {{< track "${TIMESTAMP}" >}}
+
+          **Investigating** — Internal services are reporting degraded status.
+          EOF
+
+            git config user.name "Status Bot"
+            git config user.email "status-bot@webakshar.com"
+            git add "$FILENAME"
+            git commit -m "incident: Websarthi API disrupted [automated]"
             git push
           fi
 
