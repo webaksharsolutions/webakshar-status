@@ -1,7 +1,8 @@
 ---
 title: "Websarthi Website Outage"
 date: 2026-03-25T02:39:40.000Z
-resolved: false
+resolved: true
+resolvedWhen: 2026-03-25T03:00:00.000Z
 severity: down
 affected:
   - Websarthi Website
