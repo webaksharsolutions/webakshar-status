@@ -64,7 +64,7 @@ params:
     - name: WaURL
       link: https://waurl.in
     - name: Websarthi
-      link: https://websarthi.com
+      link: https://www.websarathi.com
 
   categories:
     - name: WaURL
@@ -88,4 +88,4 @@ params:
     - name: Websarthi Website
       category: Websarthi
       description: "Main Websarthi website"
-      link: https://websarthi.com
+      link: https://www.websarathi.com

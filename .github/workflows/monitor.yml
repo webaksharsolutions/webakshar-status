@@ -80,7 +80,7 @@ jobs:
         run: |
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
             --max-time 30 \
-            "https://websarthi.com" || echo "000")
+            "https://www.websarathi.com" || echo "000")
           echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
           if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
             echo "status=ok" >> $GITHUB_OUTPUT
